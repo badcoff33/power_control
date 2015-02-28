@@ -16,12 +16,6 @@ using namespace System;
 #include <math.h>
 
 
-typedef int32_t  sint32_t;
-typedef int16_t  sint16_t;
-typedef int8_t  sint8_t;
-
-
-
 /*! \brief number of binary digits after comma used in fixed point calculations */
 #define PID_FIXED_POINT_POSITION	(1 << 8)
 
@@ -80,12 +74,12 @@ int
 PIControl::control(int xTarget, int xActual)
 {
 
-    sint32_t deltaX;        /* value of actual control deviation 'w' */
-    sint32_t partP;         /* value of the proportional part 'i' of the calculated setpoint */
-    sint32_t partI;         /* value of the integral part 'i' of the calculated setpoint */
-    sint32_t y;      /* calculated value of the pid controller in fixed-point representation */
-    sint32_t yLimited;
-    static sint32_t yCutoff = 0;
+    Int32 deltaX;        /* value of actual control deviation 'w' */
+    Int32 partP;         /* value of the proportional part 'i' of the calculated setpoint */
+    Int32 partI;         /* value of the integral part 'i' of the calculated setpoint */
+    Int32 y;      /* calculated value of the pid controller in fixed-point representation */
+    Int32 yLimited;
+    static Int32 yCutoff = 0;
 
     /* Calculate control deviation */
     deltaX = xTarget - xActual;
@@ -145,7 +139,7 @@ PIControl::control(int xTarget, int xActual)
     printf(" yCutoff=%d ", yCutoff / 256);
     printf(" p=%d i=%d ", partP / 256, prevPartI / 256);
 
-    return (sint16_t)((yLimited + (PID_FIXED_POINT_POSITION / 2)) / PID_FIXED_POINT_POSITION);
+    return (Int16)((yLimited + (PID_FIXED_POINT_POSITION / 2)) / PID_FIXED_POINT_POSITION);
 }
 
 
