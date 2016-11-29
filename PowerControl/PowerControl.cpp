@@ -4,9 +4,6 @@
 
 using namespace System;
 
-
-
-
 #include <vector>
 #include <algorithm>
 #include <functional>
@@ -15,23 +12,17 @@ using namespace System;
 #include <stddef.h>
 #include <math.h>
 
-
 /*! \brief number of binary digits after comma used in fixed point calculations */
-#define PID_FIXED_POINT_POSITION	(1 << 8)
+#define PID_FIXED_POINT_POSITION (1 << 8)
 
-
-
-
-#define KP (500) // W/(0.1°C)
+#define KP (500)   // W/(0.1°C)
 #define KPDIV (10) // compensate 0.1°C
 #define KI (5)
 #define MAXOUT 5000
 #define MINOUT 2000
 #define TARGET_X 80
 
-
 #define ANTI_WINDUP_METHOD (1)
-
 
 class PIControl
 {
@@ -41,42 +32,39 @@ class PIControl
     int minY;
     int prevPartI;
     int prevDeltaX;
-public:
-    PIControl(); // constructor
+
+  public:
+    PIControl();  // constructor
     ~PIControl(); // de-constructor
     int control(int, int);
     void reset(void) { prevPartI = 0; };
-    void with_kp(int x)   { kp = (x * PID_FIXED_POINT_POSITION) / KPDIV; };
-    void with_ki(int x)   { ki = (x * PID_FIXED_POINT_POSITION) / KPDIV; };
+    void with_kp(int x) { kp = (x * PID_FIXED_POINT_POSITION) / KPDIV; };
+    void with_ki(int x) { ki = (x * PID_FIXED_POINT_POSITION) / KPDIV; };
     void with_maxY(int x) { maxY = x * PID_FIXED_POINT_POSITION; };
     void with_minY(int x) { minY = x * PID_FIXED_POINT_POSITION; };
 };
 
-
 PIControl::PIControl()
 {
-    kp = 0;
-    ki = 0;
-    maxY = 0;
-    minY = 0;
-    prevPartI = 0;
+    kp         = 0;
+    ki         = 0;
+    maxY       = 0;
+    minY       = 0;
+    prevPartI  = 0;
     prevDeltaX = 0;
 }
-
 
 PIControl::~PIControl()
 {
     printf("delete\n");
 }
 
-
-int
-PIControl::control(int xTarget, int xActual)
+int PIControl::control(int xTarget, int xActual)
 {
 
-    Int32 deltaX;        /* value of actual control deviation 'w' */
-    Int32 partP;         /* value of the proportional part 'i' of the calculated setpoint */
-    Int32 partI;         /* value of the integral part 'i' of the calculated setpoint */
+    Int32 deltaX; /* value of actual control deviation 'w' */
+    Int32 partP;  /* value of the proportional part 'i' of the calculated setpoint */
+    Int32 partI;  /* value of the integral part 'i' of the calculated setpoint */
     Int32 y;      /* calculated value of the pid controller in fixed-point representation */
     Int32 yLimited;
     static Int32 yCutoff = 0;
@@ -106,17 +94,13 @@ PIControl::control(int xTarget, int xActual)
     /* Check range and restrict the set-value if necessary */
     if (y > maxY)
     {
-
         yLimited = maxY;
         printf(" max ");
-
     }
     else if (y < minY)
     {
-
         yLimited = minY;
         printf(" min ");
-
     }
     else
     {
@@ -125,7 +109,6 @@ PIControl::control(int xTarget, int xActual)
 #endif
         yLimited = y;
         printf("     ");
-
     }
 
     yCutoff = y - yLimited;
@@ -142,10 +125,6 @@ PIControl::control(int xTarget, int xActual)
     return (Int16)((yLimited + (PID_FIXED_POINT_POSITION / 2)) / PID_FIXED_POINT_POSITION);
 }
 
-
-
-
-
 class SRControl
 {
     signed int py;
@@ -153,31 +132,32 @@ class SRControl
     signed int maxfsr;
     signed int scaleFactor;
 
-public:
-
-    SRControl(int f, int rsra, int rsrb, int fsra, int fsrb) {
+  public:
+    SRControl(int f, int rsra, int rsrb, int fsra, int fsrb)
+    {
         scaleFactor = f;
-        maxrsr = (rsra * scaleFactor) / rsrb;
-        maxfsr = (fsra * scaleFactor) / fsrb;
+        maxrsr      = (rsra * scaleFactor) / rsrb;
+        maxfsr      = (fsra * scaleFactor) / fsrb;
         printf(" maxrsr = %d ", maxrsr);
         printf(" maxfsr = %d ", maxfsr);
     };
 
-    void preset(int a, int b) {
+    void preset(int a, int b)
+    {
         py = (a * scaleFactor) / b;
         printf("preset=%d\n", py / scaleFactor);
     };
 
-    int limitSlewRate(int x) {
+    int limitSlewRate(int x)
+    {
         int dx = x * scaleFactor - py;
         if (dx > maxrsr)
             dx = maxrsr;
         else if (dx < maxfsr)
             dx = maxfsr;
-        py = py + dx;
+        py     = py + dx;
         return py / scaleFactor;
     }
-
 };
 
 //int main(array<System::String ^> ^args)
@@ -186,7 +166,7 @@ public:
 //    return 0;
 //}
 
-int main(int argc, const char* argv[])
+int main(int argc, const char *argv[])
 {
     int startY, actualX, y, y1, py;
     int guidedTargetTemperature;
@@ -201,10 +181,9 @@ int main(int argc, const char* argv[])
 
     SRControl measuredSRC(100, +830, (KP + KI), -830, (KP + KI));
 
-
     if (argv[1])
     {
-        startY = atoi(argv[1]);
+        startY  = atoi(argv[1]);
         actualX = atoi(argv[2]);
     }
     else
@@ -214,13 +193,13 @@ int main(int argc, const char* argv[])
     }
 
     powerSRC.preset(startY,
-        1);
+                    1);
 
     targetSRC.preset(10 * ((actualX * (KP + KI)) + (startY - MINOUT)),
-        (KP + KI));
+                     (KP + KI));
 
     measuredSRC.preset(10 * actualX,
-        1);
+                       1);
 
     mainc.with_kp(KP);
     mainc.with_ki(KI);
@@ -241,7 +220,7 @@ int main(int argc, const char* argv[])
         guidedActualTemperature = measuredSRC.limitSlewRate(10 * (signed int)x);
 
         y = mainc.control(guidedTargetTemperature,
-            guidedActualTemperature);
+                          guidedActualTemperature);
 
         y1 = powerSRC.limitSlewRate(y);
 
@@ -252,5 +231,4 @@ int main(int argc, const char* argv[])
         printf("\n");
         py = y1;
     }
-
 }
